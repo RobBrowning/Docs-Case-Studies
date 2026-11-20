@@ -11,6 +11,7 @@ numbers, and the limits of the evidence.
 | Case study | Date | In one line |
 |---|---|---|
 | [AI in my QA workflow](case-studies/ai-in-my-qa-workflow/README.md) | Nov 2026 | Test agents, an AI PR reviewer and an independent result verifier, measured with seeded defects: 4/4 caught by the reviewer, 5 tester mistakes caught by the verifier, 0 false positives |
+| [AI in QA: what I've built and learned, 2022 to 2026](case-studies/ai-in-qa-2022-2026/README.md) | Nov 2026 | The longer view: custom GPT suite, an AI manual tester plugin with an independent verifier, planning vs building with two Claudes, a small business's digital stack, and release dashboards |
 
 ## Related repos
 
