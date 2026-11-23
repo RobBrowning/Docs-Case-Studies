@@ -11,6 +11,7 @@ numbers, and the limits of the evidence.
 | Case study | Date | In one line |
 |---|---|---|
 | [AI in my QA workflow](case-studies/ai-in-my-qa-workflow/README.md) | Nov 2026 | Test agents, an AI PR reviewer and an independent result verifier, measured with seeded defects: 4/4 caught by the reviewer, 5 tester mistakes caught by the verifier, 0 false positives |
+| [Automated evals and a QA plugin on the same AI chatbot](case-studies/evals-and-qa-plugin-on-an-ai-chatbot/README.md) | Nov 2026 | qa-toolkit vs a green eval suite on the same bot: 6 kinds of bug the suite missed on the clean build, 2 of 2 blind seeded defects named, and the verifier caught the tester in every run |
 | [Testing an AI chatbot](case-studies/testing-an-ai-chatbot/README.md) | Nov 2026 | A RAG bot on local Hugging Face models, tested in layers: 7 real bot failures fixed one change per commit, a judge replaced after failing calibration, 5/5 seeded defects caught, hold-out 10/12 |
 | [AI in QA: what I've built and learned, 2022 to 2026](case-studies/ai-in-qa-2022-2026/README.md) | Nov 2026 | The longer view: custom GPT suite, an AI manual tester plugin with an independent verifier, planning vs building with two Claudes, a small business's digital stack, and release dashboards |
 
