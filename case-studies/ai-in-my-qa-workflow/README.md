@@ -1,6 +1,6 @@
 # AI in my QA workflow
 
-**Author:** Rob Browning · **Period:** 13 to 20 November 2026 · **Status:** written 20 Nov 2026
+**Author:** Rob Browning · **Period:** 13 to 25 November 2026 · **Status:** written 20 Nov 2026; [chapter 2](#chapter-2-test-agents-under-house-conventions) added 25 Nov 2026
 
 ## Summary
 
@@ -16,6 +16,7 @@ caught.
 | Playwright Test Agents | First-pass quality of plan, tests and heals | 16-scenario plan; 7 of 8 generated tests passed first time; healer fixed the root cause once and **refused** to change an expected value once |
 | AI pull request reviewer | Seeded PR with 4 known defects | **4 of 4** caught plus 3 real extras, **0 false positives**, 53 seconds. A generic code-review plugin caught 3 of 4 |
 | Independent result verifier | 3 runs (UI, API, live site), verdicts withheld from the verifier | Both seeded defects caught. Verifier disagreed with the tester **5 times**: every one a real evidence gap, **0 false positives** |
+| Test Agents under house conventions (chapter 2) | A second agent run after writing the lessons into the generator's rules | Generator reused **every** existing page object method and marked **24** gaps honestly; consolidation was mechanical. Cost moved to the planner (**87 min**) and to tests nobody had run: one real timing bug found only by running them |
 
 The most useful finding: **the AI checking the work caught more of my mistakes than the AI doing
 the work caught of the software's.** In five places I would have signed off a pass that the
@@ -142,12 +143,111 @@ left as a decision for me rather than looped.
 between rounds (2,124 bookings became 1,587), and the retest re-hunted its data instead of reusing
 stale ids.
 
+## Chapter 2: Test Agents under house conventions
+
+**Date:** 25 November 2026 · **Repo:** [playwright-qa-showcase](https://github.com/RobBrowning/playwright-qa-showcase),
+pull requests [#12](https://github.com/RobBrowning/playwright-qa-showcase/pull/12) and
+[#14](https://github.com/RobBrowning/playwright-qa-showcase/pull/14)
+
+### The question
+
+Chapter 1 ended with a refactor: the generator put locators inline and I moved them into page
+objects by hand. Repeating "use the page objects" in every prompt is easy to forget and does not
+scale. So: **if the lessons are written into the agent's own instructions, does the output arrive in
+house style, and where does the remaining cost go?**
+
+### What I changed first (PR #12, ADR 0006)
+
+Reading the generator's definition turned up a constraint I had missed: **it can read files and
+write a test file, nothing else.** It can reuse page objects; it cannot create or extend them. So
+the rule could not be "use page objects". It had to be a hand-off:
+
+1. **Generator rules.** A "House conventions" section in the agent file: import from the project's
+   fixtures, reuse existing page object methods, keep assertions in the spec, and where a page
+   object is missing, write the step inline and mark it `// TODO(page-object): Page.method`.
+2. **Consolidation step.** Before a PR, the main Claude Code session (not an agent) merges the
+   drafts into one spec, turns every TODO into a real page object method, and removes duplicates.
+3. **Reviewer rules.** The AI PR reviewer treats a leftover TODO, a duplicated locator or a direct
+   Playwright import in a spec as a Blocker.
+4. **Blockers block.** The branch ruleset already required every review thread resolved before
+   merge. Each reviewer finding is a thread, so a Blocker can't merge unnoticed.
+
+Rejected: giving the generator Edit and Write tools. That would let an agent change shared code
+before anyone looks at it, and add one more customisation to reapply on every Playwright upgrade.
+
+### The run: SauceDemo's burger menu (PR #14)
+
+A new area with no tests and no page object: open and close, All Items, About, Logout and Reset
+App State.
+
+| Step | Time | Output |
+|---|---|---|
+| Planner | **87 min** (63 to first save) | 8 scenarios, 10 observed quirks, 1 flagged as replacing no manual check |
+| My plan review | not timed | 4 changes: two overlapping scenarios merged, About checked by link only, a coordinate click dropped, a missing strategy row added |
+| Generator | **81 s** | 6 draft files, **24** `TODO(page-object)` markers |
+| Consolidation | about 5 min | 1 spec, 1 new `MenuPage`, 6 tests |
+| CI and AI review | minutes | All green; reviewer 0 findings, twice |
+
+### What worked
+
+- **The generator followed every rule.** It imported from the fixtures, started from the logged-in
+  fixture, named the manual check each test replaces, and used role or `data-test` locators only. It
+  reused every existing method that fitted, across four page objects, and inlined nothing they
+  already exposed. **It invented no methods.**
+- **The TODOs made consolidation mechanical.** All 24 pointed at one missing page object. Adding
+  `MenuPage` with five actions resolved every one. In chapter 1 the same step was an unplanned
+  refactor.
+- **The planner reused, too.** It named the existing methods to use, pointed at existing login and
+  cart tests instead of re-planning them, and left out a fifth menu item nobody asked for.
+- **Quirks stayed quirks.** "Reset App State" clears the cart but leaves stale Remove buttons until
+  a reload. The tests assert that and comment it, rather than treat it as a bug to fix.
+
+### What still needed a human
+
+- **The planner was slow.** 87 minutes, most of it two browser calls that hung for the full 30 minute
+  tool limit. The brief was broad (five pages, keyboard focus, back navigation), which gave it more
+  places to stall.
+- **The planner's save tool forces a format.** It has no field for "manual check replaced", so it
+  wrote that line in as a test step with nothing to check. Same as chapter 1. It was fixed by hand
+  twice, because the second save undid the first fix.
+- **My plan review changed four things,** mostly about upkeep rather than correctness: a duplicate
+  scenario, a test that would make CI depend on an external site, a click at fixed coordinates that
+  would have landed off-screen on the mobile project, and a missing note that these tests have no
+  Cypress twin yet.
+- **A real timing bug, found only by running the tests.** "Escape closes the menu" failed. The menu
+  items count as visible while the panel is still sliding in, but the menu ignores Escape until it
+  has finished opening. The planner reported "Escape closes the menu" without seeing the timing,
+  and the generator wrote a test it never ran. The fix was a wait in the page object, not a weaker
+  assertion: 35 of 35 passes on repeat, desktop and mobile.
+- **The reviewer missed a duplicate.** It checked every rule and found nothing, twice. But the new
+  spec repeated an error message already asserted in the login tests, which its own prompt lists as
+  a Minor. I caught it in my review, and it now lives in one shared helper.
+
+### What changed between chapters
+
+| | Chapter 1 (13 Nov) | Chapter 2 (25 Nov) |
+|---|---|---|
+| Generator rules | Passed in the prompt | Written into the agent file (ADR 0006) |
+| Page object reuse | Inline locators, refactored by hand | Every fitting method reused, gaps marked |
+| Consolidation | Unplanned refactor | A defined step: add one page object, merge, dedupe |
+| First-run failures | 1 of 8 (a real race) | 1 of 6 (a real timing bug) |
+| Where the cost sits | Generator output | Planner time, and tests nobody had run |
+
+**Lesson:** writing the rules into the agent moved the problem rather than removed it. The
+generator is now cheap and predictable. What is left is the part no agent did here: **running the
+tests**. Both chapters' only real failure was found that way. An agent run isn't finished until a
+human or CI has actually run its tests.
+
 ## What I'd tell another QA lead
 
 - **Separate the doer from the checker, and hide the answer from the checker.** That single design
   choice produced the most value all week.
 - **Write the rules down and pass them every time.** The agents followed project rules well when
-  given them explicitly, and not otherwise.
+  given them explicitly, and not otherwise. Better still, write them into the agent itself
+  (chapter 2): then nobody has to remember.
+- **Read the agent's tool list before you write its rules.** The generator couldn't create page
+  objects, so the useful rule was a hand-off, not a demand.
+- **Keep planner briefs narrow.** One area per run, or a time limit. A broad brief cost 87 minutes.
 - **Seed defects to measure.** It turned "seems useful" into 4 of 4, 0 false positives, and gave me
   a fair comparison between two reviewers.
 - **Cap the loops.** Two verification rounds, then a human decision. Looping past that looks
@@ -163,11 +263,13 @@ stale ids.
 - In the two demo runs the verifier ran as a general-purpose agent loaded with the verifier's
   instructions. The live check used the installed plugin agent.
 - The plugin has not yet been run on a site with a separate baseline environment.
+- Chapter 2 is one run on one area. Times are single measurements, and consolidation was timed from
+  file timestamps, not a stopwatch.
 
 ## What's next
 
 - Run qa-toolkit on a real project with a staging environment.
-- A showcase on **testing an AI chatbot**: groundedness, refusals and prompt injection, with an
-  independent judge from a different model family, so the AI isn't marking its own work.
-- A follow-up case study measuring classic automation and the AI plugin side by side on that
-  chatbot.
+- Done since chapter 1: [Testing an AI chatbot](../testing-an-ai-chatbot/README.md) and
+  [Automated evals and a QA plugin on the same AI chatbot](../evals-and-qa-plugin-on-an-ai-chatbot/README.md).
+- Test Agents, chapter 3: a narrow planner brief with a time limit, to see whether the planner's
+  cost drops and its quality holds.
