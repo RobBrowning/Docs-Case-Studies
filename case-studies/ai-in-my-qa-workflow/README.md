@@ -210,9 +210,10 @@ App State.
 - **The planner's save tool forces a format.** It has no field for "manual check replaced", so it
   wrote that line in as a test step with nothing to check. Same as chapter 1. It was fixed by hand
   twice, because the second save undid the first fix.
-- **My plan review changed four things,** all about cost, not correctness: a duplicate scenario, a
-  test that would make CI depend on an external site, and a click at fixed coordinates that would
-  have landed off-screen on the mobile project.
+- **My plan review changed four things,** mostly about upkeep rather than correctness: a duplicate
+  scenario, a test that would make CI depend on an external site, a click at fixed coordinates that
+  would have landed off-screen on the mobile project, and a missing note that these tests have no
+  Cypress twin yet.
 - **A real timing bug, found only by running the tests.** "Escape closes the menu" failed. The menu
   items count as visible while the panel is still sliding in, but the menu ignores Escape until it
   has finished opening. The planner reported "Escape closes the menu" without seeing the timing,
